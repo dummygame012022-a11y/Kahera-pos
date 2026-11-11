@@ -1,0 +1,9 @@
+*.db
+*.key
+telegram.json
+*.apk
+*.bak*
+__pycache__/
+backup/
+.env
+static/gcash_qr.png
