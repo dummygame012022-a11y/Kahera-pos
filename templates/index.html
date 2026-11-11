@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title id="pageTitle">Tindahan Kahera</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#0f172a">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<script src="/static/offline.js"></script><script>(function(){function s(){document.documentElement.style.setProperty("--kh-h",window.innerHeight+"px")}s();window.addEventListener("resize",s);window.addEventListener("orientationchange",s)})();</script></head>
+<body>
+
+  <!-- SIDEBAR MENU DRAWER -->
+  <div class="sidebar-drawer" id="sidebarDrawer">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+      <span style="font-size: 11px; font-weight: 800; color: #22c55e;">NAVIGATION</span>
+      <button onclick="toggleSidebar()" style="background: none; border: none; color: #fff; cursor: pointer; font-size: 12px;">✕</button>
+    </div>
+    <div class="sidebar-item" onclick="toggleSidebar()">🛒 Sales Register</div>
+<!--     <div class="sidebar-item" onclick="openKdsModal(); toggleSidebar();">🍳 Kitchen Display (KDS)</div> -->
+    <div class="sidebar-item" onclick="openItemManagerModal(); toggleSidebar();">📦 Items & Inventory Management</div>
+  <div class="sidebar-item" onclick="openStockViewModal(); toggleSidebar();">📊 Stock View (read-only)</div>
+  <div class="sidebar-item" onclick="openUtangModal(); toggleSidebar();">📝 Utang List</div>
+    <div class="sidebar-item" onclick="openSalesHistoryModal(); toggleSidebar();">📜 Receipts & Sales History</div>
+    <div class="sidebar-item" onclick="openSettingsModal(); toggleSidebar();">⚙️ Store Settings</div>
+    <div class="sidebar-item" onclick="openStaffModal(); toggleSidebar();">&#128101; Staff PINs</div>
+    <div class="sidebar-item" onclick="openDataModal(); toggleSidebar();">&#128190; Data: Reset</div>
+    <div class="sidebar-item" id="subItem" onclick="location.href='/pay'" style="display:none;color:#22c55e;font-weight:bold"></div>
+    <div class="sidebar-item" onclick="openGuide(); toggleSidebar();">&#128214; Gabay / Guide</div>
+<div class="sidebar-item" onclick="logoutNow(); toggleSidebar();">&#128274; Log out</div>
+  </div>
+
+  <div class="pos-header">
+    <div class="brand-container" style="text-align:center; flex-grow:1; margin:0 auto;">
+      <button class="menu-toggle-btn" onclick="toggleSidebar()">☰</button>
+      <img src="/static/icon-192.png" width="40" height="40" alt="Kahera" style="flex:0 0 auto;display:block;border-radius:9px;">
+      <div class="brand-text-group" style="text-align:center; flex-grow:1; margin:0 auto;">
+        <div class="brand-name" style="text-align:center; flex-grow:1; margin:0 auto;" id="headerStoreName">Tindahan Kahera</div>
+      </div>
+    </div>
+    <div class="header-actions">
+    </div>
+  </div>
+  <div id="khBanner" style="display:none; background:#78350f; color:#fde68a; font-size:10px; padding:6px 10px; align-items:center; justify-content:space-between; gap:8px;"><span id="khBannerText" style="flex:1; cursor:pointer;" onclick="khBannerTap()"></span><button type="button" onclick="khBannerClose()" style="background:none; border:none; color:#fde68a; font-size:16px; padding:0 4px; cursor:pointer;">&times;</button></div>
+
+  <div class="pos-workspace">
+    <div class="product-section">
+      <div class="category-tabs" id="categoryTabs"></div>
+
+      <div class="search-row">
+        <div style="display: flex; gap: 8px; align-items: center; width: 100%;">
+      <input type="text" id="searchBox" class="search-box" placeholder="🔍 Search item..." onkeyup="filterProducts()" onkeydown="handleBarcodeScan(event)" style="flex: 1;">
+      
+    </div>
+        <button class="custom-item-btn" onclick="openCustomModal()">+ Custom Item</button>
+      </div>
+
+      <div class="product-grid" id="productGrid"></div>
+    </div>
+
+    <div class="cart-section">
+      <div class="order-type-bar" style="display:none;">
+        <button class="order-type-btn active" onclick="setOrderType(this)">Dine-In</button>
+        <button class="order-type-btn" onclick="setOrderType(this)">Take-Out</button>
+        <button class="order-type-btn" onclick="setOrderType(this)">Delivery</button>
+      </div>
+
+      <div class="customer-bar" style="display:none;" onclick="openCustomerModal()">
+        <span id="customerNameDisplay">👤 Customer</span>
+        <span style="font-size: 9px; color: #94a3b8;">Change ▼</span>
+      </div>
+
+      <div class="cart-header" style="align-items:center;">
+        <span>Current Order</span>
+        <span><span id="cartCount">0 items</span> <button class="nav-btn" style="margin-left:10px; background:#7f1d1d; color:#fca5a5; border:1px solid #7f1d1d; min-height:36px; padding:4px 12px; font-size:12px;" onclick="clearCart()">Clear Cart</button></span>
+      </div>
+
+      <div class="cart-items" id="cartItems">
+        <div class="cart-empty">No items added yet</div>
+      </div>
+
+      <div class="cart-actions">
+        <button class="action-chip-btn" style="display:none;" onclick="openNoteModal()">📝 Add Note</button>
+      </div>
+
+      <div class="cart-footer">
+        <div class="summary-row">
+          <span>Subtotal</span>
+          <span id="subtotalText">₱0.00</span>
+        </div>
+        <div class="summary-row" id="discountRow" style="display: none; color: #22c55e;">
+          <span>Discount (10%)</span>
+          <span id="discountText">-₱0.00</span>
+        </div>
+        <div class="summary-row" id="taxRow" style="display: none; color: #38bdf8;">
+          <span id="taxLabel">VAT (12%)</span>
+          <span id="taxText">₱0.00</span>
+        </div>
+        <div class="summary-row total">
+          <span>Total</span>
+          <span id="totalText">₱0.00</span>
+        </div>
+        <button class="pay-btn" onclick="openPaymentModal()">Charge / Pay</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODALS -->
+  <div class="modal-overlay" id="renameCatModal" style="z-index: 10000;">
+    <div class="modal-content">
+      <div style="font-size: 12px; font-weight: bold; color: #22c55e;">Rename Category</div>
+      <input type="text" id="renameCatInput" class="custom-input" placeholder="Category name">
+      <div style="display: flex; gap: 6px;">
+        <button class="modal-btn" style="background: #334155; color: #fff; flex: 1; min-height: 44px;" onclick="closeRenameCat()">Cancel</button>
+        <button class="modal-btn" style="flex: 1; min-height: 44px;" onclick="saveRenameCat()">Save</button>
+      </div>
+    </div>
+  </div>
+  <div id="loginOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:20000; background:#0f172a; align-items:center; justify-content:center; padding:15px; box-sizing:border-box; overflow-y:auto;">
+    <div style="width:100%; max-width:320px; text-align:center; color:#f8fafc;">
+      <div style="display:flex; justify-content:center;"><img src="/static/icon-192.png" width="84" height="84" alt="Kahera" style="border-radius:18px;"></div>
+      <div style="font-size:20px; font-weight:900; letter-spacing:1px; margin-top:8px; margin-bottom:14px;">Tindahan Kahera</div>
+      <div id="loginTitle" style="font-size:13px; font-weight:bold; color:#22c55e; margin-bottom:6px;">Enter PIN</div>
+      <div id="loginDots" style="font-size:26px; letter-spacing:6px; min-height:36px;"></div>
+      <div id="loginMsg" style="color:#fca5a5; font-size:12px; min-height:16px; margin-bottom:6px;"></div>
+      <div id="loginPad" style="display:grid; grid-template-columns:repeat(3,1fr); gap:8px;"></div>
+      <div style="font-size:11px; color:#64748b; margin-top:14px;">by Totskie Tech Solution</div>
+    </div>
+  </div>
+  <div class="modal-overlay" id="staffModal" style="z-index: 10000;">
+    <div class="modal-content">
+      <div style="font-size: 12px; font-weight: bold; color: #22c55e;">Staff PINs</div>
+      <div id="staffList" style="display:flex; flex-direction:column; gap:6px; max-height:140px; overflow-y:auto;"></div>
+      <input type="text" id="staffName" class="custom-input" placeholder="Name">
+      <select id="staffRole" class="custom-input"><option value="cashier">Cashier</option><option value="admin">Admin</option></select>
+      <input type="password" id="staffPin" class="custom-input" placeholder="PIN (4-6 digits)" inputmode="numeric" maxlength="6">
+      <div style="border-top:1px solid #334155; padding-top:6px; font-size:10px; color:#94a3b8;">Recovery Code (for forgotten PIN)</div>
+      <div id="recStatus" style="font-size:10px;"></div>
+      <div id="recShown" style="font-size:18px; font-weight:bold; color:#facc15; text-align:center; letter-spacing:2px;"></div>
+      <button class="modal-btn" style="background:#334155; color:#38bdf8; min-height:40px;" onclick="generateRecovery()">Generate Recovery Code</button>
+      <div style="display: flex; gap: 8px;">
+        <button class="modal-btn" style="background: #334155; color: #fff; flex: 1; min-height: 44px;" onclick="closeStaffModal()">Close</button>
+        <button class="modal-btn" style="flex: 1; min-height: 44px;" onclick="addStaff()">Add</button>
+      </div>
+    </div>
+  </div>
+  <div class="modal-overlay" id="dataModal" style="z-index: 10000;">
+    <div class="modal-content">
+      <div style="border-top: 1px solid #334155; margin-top: 4px; padding-top: 8px; font-size: 12px; font-weight: bold; color: #fca5a5;">Reset to Defaults</div>
+      <div style="font-size: 10px; color: #94a3b8;">Deletes all items, categories, sales, Utang, expenses and store settings. Staff PINs and Recovery Code are kept. Export sales first in Receipts &amp; Sales History.</div>
+      <input type="password" id="resetPinInput" class="custom-input" placeholder="Admin PIN to confirm" inputmode="numeric" maxlength="6">
+      <button class="modal-btn" style="background: #7f1d1d; color: #fca5a5; min-height: 44px;" onclick="resetToDefaults()">Reset to Defaults</button>
+      <button class="modal-btn" style="background: #334155; color: #fff; min-height: 44px;" onclick="closeDataModal()">Close</button>
+    </div>
+  </div>
+  <div class="modal-overlay" id="customPromptModal">
+    <div class="modal-content" style="width: 280px; text-align: center;">
+      <div class="receipt-header" style="color: #22c55e;">Add Stock</div>
+      <div style="font-size: 11px; color: #f8fafc; padding: 6px 0;" id="promptMessage"></div>
+      <input type="number" inputmode="numeric" id="promptInput" class="custom-input" placeholder="0">
+      <div style="display: flex; gap: 6px; margin-top: 4px;">
+        <button class="modal-btn" style="background: #334155; color: #fff; flex: 1;" onclick="document.getElementById('customPromptModal').style.display='none'">Cancel</button>
+        <button class="modal-btn" style="flex: 1;" id="promptOkBtn">Add Stock</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="customAlertModal">
+    <div class="modal-content" style="width: 280px; text-align: center;">
+      <div class="receipt-header" style="color: #22c55e;">System Notification</div>
+      <div style="font-size: 11px; color: #f8fafc; padding: 6px 0;" id="customAlertMessage">Alert message here</div>
+      <button class="modal-btn" onclick="closeCustomAlert()">OK</button>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="customConfirmModal">
+    <div class="modal-content" style="width: 280px; text-align: center;">
+      <div class="receipt-header" style="color: #f59e0b;">Confirmation Required</div>
+      <div style="font-size: 11px; color: #f8fafc; padding: 6px 0;" id="customConfirmMessage">Are you sure?</div>
+      <div style="display: flex; gap: 6px; margin-top: 4px;">
+        <button class="modal-btn" style="background: #334155; color: #fff; flex: 1;" onclick="closeCustomConfirm(false)">Cancel</button>
+        <button class="modal-btn" style="flex: 1;" id="confirmYesBtn">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="customerModal">
+    <div class="modal-content" style="width: 280px;">
+      <div class="receipt-header">Change Customer Name</div>
+      <label style="font-size: 9px; color: #94a3b8;">Customer Name / Table #:</label>
+      <input type="text" id="inputCustomerName" class="custom-input" placeholder="e.g. John Doe or Table 4">
+      <div style="display: flex; gap: 6px; margin-top: 4px;">
+        <button class="modal-btn" style="background: #334155; color: #fff; flex: 1;" onclick="closeCustomerModal()">Cancel</button>
+        <button class="modal-btn" style="flex: 1;" onclick="saveCustomerName()">Save Name</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="noteModal">
+    <div class="modal-content" style="width: 280px;">
+      <div class="receipt-header">Add Order Note</div>
+      <label style="font-size: 9px; color: #94a3b8;">Kitchen Instructions / Note:</label>
+      <input type="text" id="inputOrderNote" class="custom-input" placeholder="e.g. Less spicy, extra rice">
+      <div style="display: flex; gap: 6px; margin-top: 4px;">
+        <button class="modal-btn" style="background: #334155; color: #fff; flex: 1;" onclick="closeNoteModal()">Cancel</button>
+        <button class="modal-btn" style="flex: 1;" onclick="saveOrderNote()">Save Note</button>
+      </div>
+    </div>
+  </div>
+
+    <div id="kdsTicket" style="display:none;"></div>
+  <div class="modal-overlay" id="kdsModal">
+    <div class="modal-content" style="width: 500px; max-height: 90vh;">
+      <div class="receipt-header">Kitchen Display System (KDS)</div>
+      <div style="font-size: 9px; color: #94a3b8; text-align: center; margin-bottom: 4px;">Live incoming orders for kitchen preparation:</div>
+      <div class="kds-grid" id="kdsContainer" style="max-height: 320px; overflow-y: auto;">
+        <div class="cart-empty">No active kitchen orders</div>
+      </div>
+      <button class="modal-btn" style="background: #334155; color: #fff; margin-top: 8px;" onclick="closeKdsModal()">Close Kitchen View</button>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="paymentModal">
+    <div class="modal-content" style="width: 320px;">
+      <div class="receipt-header">Select Payment Method</div>
+      <div class="pay-method-grid">
+        <div class="pay-method-tab active" id="tabCash" onclick="switchPaymentMethod('Cash')">💵 Cash</div>
+        <div class="pay-method-tab" id="tabGcash" onclick="switchPaymentMethod('GCash')">📱 E-Wallet</div>
+        <div class="pay-method-tab" id="tabUtang" onclick="switchPaymentMethod('Utang')">📝 Utang</div>
+      </div>
+      <div id="cashPaymentSection">
+        <div style="font-size: 10px; color: #94a3b8; margin-bottom: 2px;">Total Due:</div>
+        <div style="font-size: 16px; font-weight: 800; color: #22c55e; margin-bottom: 6px;" id="payModalTotal">₱0.00</div>
+        <label style="font-size: 9px; color: #94a3b8;">Cash Tendered:</label>
+        <input type="number" id="cashTenderedInput" class="custom-input" placeholder="0.00" oninput="calculateChange()" style="font-size: 14px; font-weight: bold; color: #38bdf8;">
+        
+        <!-- Quick Cash Presets Grid -->
+        <div class="quick-cash-grid">
+          <button type="button" class="quick-cash-btn exact-btn" onclick="setExactCash()">Exact</button>
+          <button type="button" class="quick-cash-btn" onclick="setPresetCash(20)">₱20</button>
+          <button type="button" class="quick-cash-btn" onclick="setPresetCash(50)">₱50</button>
+          <button type="button" class="quick-cash-btn" onclick="setPresetCash(100)">₱100</button>
+          <button type="button" class="quick-cash-btn" onclick="setPresetCash(200)">₱200</button>
+          <button type="button" class="quick-cash-btn" onclick="setPresetCash(500)">₱500</button>
+          <button type="button" class="quick-cash-btn" onclick="setPresetCash(1000)">₱1000</button>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 11px; margin-top: 4px; background: #0f172a; padding: 6px; border-radius: 4px; border: 1px solid #334155;">
+          <span style="color: #94a3b8;">Change Due:</span>
+          <span style="color: #22c55e; font-weight: 800;" id="changeDisplay">₱0.00</span>
+        </div>
+      </div>
+      <div id="payCustWrap" style="padding: 4px 0;">
+        <div style="font-size: 10px; color: #94a3b8; margin-bottom: 2px;">Customer name (optional):</div>
+        <input type="text" id="payCustName" class="custom-input" placeholder="e.g. Ana">
+      </div>
+      <div id="utangPaymentSection" style="display: none; padding: 4px 0;">
+        <div style="font-size: 10px; color: #94a3b8; margin-bottom: 4px;">Customer name (will pay later):</div>
+        <input type="text" id="utangNameInput" class="custom-input" placeholder="e.g. Aling Rosa">
+      </div>
+      <div id="gcashPaymentSection" style="display: none; text-align: center; padding: 4px 0;">
+        <select id="ewalletType" class="custom-input" style="margin-bottom: 6px;"><option value="GCash">GCash</option><option value="Maya">Maya</option><option value="Bank">Bank</option></select>
+        <div style="font-size: 10px; color: #38bdf8; margin-bottom: 4px; font-weight: bold;">Customer pays to the store's QR</div>
+        <div style="background: #fff; width: 120px; height: 120px; margin: 0 auto; display: none; align-items: center; justify-content: center; border-radius: 6px; padding: 4px;">
+          <img id="gcashQrImage" src="" alt="GCash QR Code" style="width: 100%; height: 100%; object-fit: contain;">
+        </div>
+        <div style="font-size: 9px; color: #94a3b8; margin-top: 6px;">Store: <strong style="color: #fff;" id="qrStoreLabel">Tindahan Kahera</strong></div>
+        <div style="font-size: 9px; color: #94a3b8;">GCash No: <strong style="color: #22c55e;" id="qrContactLabel">09XX XXX XXXX</strong></div>
+        <div style="font-size: 9px; color: #94a3b8; margin-top: 8px; text-align: left;">Reference No. (from customer's phone):</div>
+        <input type="text" id="gcashRefInput" class="custom-input" autocomplete="off" placeholder="e.g. 1234 567 890123" style="min-height: 44px; margin-top: 2px; text-align: center; font-weight: bold; color: #22c55e;">
+      </div>
+      <div style="display: flex; gap: 6px; margin-top: 8px;">
+        <button class="modal-btn" style="background: #334155; color: #fff; flex: 1;" onclick="closePaymentModal()">Cancel</button>
+        <button class="modal-btn" style="flex: 1;" onclick="confirmAndProcessPayment()">Confirm Payment</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="settingsModal">
+    <div class="modal-content" style="width: 320px;">
+      <div class="receipt-header">Store Settings</div>
+      <label style="font-size: 9px; color: #94a3b8;">Store Name:</label>
+      <input type="text" id="settingStoreName" class="custom-input" placeholder="Tindahan Kahera">
+      <label style="font-size: 9px; color: #94a3b8;">Store Address / Branch:</label>
+      <input type="text" id="settingStoreAddress" class="custom-input" placeholder="Palompon, Leyte">
+      <label style="font-size: 9px; color: #94a3b8;">Contact Number (GCash No.):</label>
+      <input type="text" id="settingStoreContact" class="custom-input" placeholder="09XX XXX XXXX">
+      <label style="font-size: 9px; color: #94a3b8; margin-top: 2px;">Custom Receipt Footer Message:</label>
+      <input type="text" id="settingFooterMessage" class="custom-input" placeholder="Thank you, come again!">
+      <label style="font-size: 9px; color: #94a3b8; margin-top: 6px;">GCash / QR Ph image (shown on payment screen):</label>
+      <input type="file" id="settingGcashQrFile" accept="image/*" onchange="handleGcashQrFile(this)" class="custom-input" style="min-height: 44px; font-size: 10px;">
+      <div style="text-align: center; margin-top: 4px;">
+        <img id="settingGcashQrPreview" src="" alt="QR preview" style="display: none; width: 100px; height: 100px; object-fit: contain; background: #fff; border-radius: 6px; padding: 4px; margin: 0 auto;">
+      </div>
+      <button type="button" id="settingGcashQrRemove" class="modal-btn" onclick="removeGcashQr()" style="display: none; background: #7f1d1d; color: #fca5a5; min-height: 44px; margin-top: 4px; font-size: 10px;">Remove QR image</button>
+      <button class="modal-btn" style="background: #334155; color: #38bdf8; margin-top: 2px; font-size: 9px;" onclick="exportInventoryCsv()">📦 Export Inventory (CSV)</button>
+      <div style="display: flex; gap: 6px; margin-top: 8px;">
+        <button class="modal-btn" style="background: #334155; color: #fff; flex: 1;" onclick="closeSettingsModal()">Cancel</button>
+        <button class="modal-btn" style="flex: 1;" onclick="saveStoreSettings()">Save Settings</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="salesHistoryModal">
+    <div class="modal-content" style="width: 400px;">
+      <div class="receipt-header">Receipts & Sales History</div>
+      <div style="background: #0f172a; border: 1px solid #334155; padding: 8px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+        <div>
+          <div style="font-size: 10px; color: #94a3b8;" id="revLabel">Total Revenue Today</div>
+          <div style="font-size: 16px; font-weight: 800; color: #22c55e;" id="totalRevenueDisplay">₱0.00</div>
+          <div style="border-top:1px solid #334155; margin-top:6px; padding-top:4px; min-width:190px;"><div style="display:flex; justify-content:space-between; gap:12px; font-size:11px; color:#94a3b8; margin-top:3px;"><span>Profit</span><span id="totalProfitDisplay" style="color:#38bdf8; font-weight:bold;">₱0.00</span></div><div style="display:flex; justify-content:space-between; gap:12px; font-size:11px; color:#94a3b8; margin-top:3px;"><span>Cash in Drawer</span><span id="drawerCashDisplay" style="color:#22c55e; font-weight:bold;">₱0.00</span></div><div style="display:flex; justify-content:space-between; gap:12px; font-size:11px; color:#94a3b8; margin-top:3px;"><span>E-Wallet</span><span id="drawerEwalletDisplay" style="color:#38bdf8; font-weight:bold;">₱0.00</span></div><div style="display:flex; justify-content:space-between; gap:12px; font-size:11px; color:#94a3b8; margin-top:3px;"><span>Utang to Collect</span><span id="utangCollectDisplay" style="color:#f59e0b; font-weight:bold;">₱0.00</span></div><div style="display:flex; justify-content:space-between; gap:12px; font-size:11px; color:#94a3b8; margin-top:3px;"><span>Stock Capital</span><span id="stockPuhunanDisplay" style="color:#f59e0b; font-weight:bold;">₱0.00</span></div></div>
+        </div>
+        <button class="modal-btn" style="background: #7f1d1d; color: #fca5a5; padding: 4px 8px; font-size: 9px;" onclick="clearSalesHistory()">Reset History</button>
+      </div>
+      <div style="display:flex; gap:4px; margin-top:6px;"><button id="rngToday" class="modal-btn" style="flex:1; padding:4px; font-size:10px; min-height:32px;" onclick="setSalesRange('today')">Today</button><button id="rngWeek" class="modal-btn" style="flex:1; padding:4px; font-size:10px; min-height:32px;" onclick="setSalesRange('week')">Week</button><button id="rngMonth" class="modal-btn" style="flex:1; padding:4px; font-size:10px; min-height:32px;" onclick="setSalesRange('month')">Month</button></div>
+      <div style="max-height: 200px; overflow-y: auto; margin-top: 6px;">
+        <table class="manager-table">
+          <thead>
+            <tr>
+              <th>Time / Cust</th>
+              <th>Total</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="salesHistoryTableBody"></tbody>
+        </table>
+      </div>
+      <button class="modal-btn" style="background:#f59e0b; color:#0f172a; font-weight:bold; margin-top:8px;" onclick="openExpenses()">+ Add Expense</button>
+      <div style="font-size:12px; font-weight:bold; color:#f59e0b; margin-top:8px;">Expenses</div><table class="manager-table" style="width:100%; margin-top:4px;"><tbody id="expInlineBody"></tbody></table>
+      
+      <div style="border-top:1px solid #334155; margin-top:6px; padding-top:6px;"><!-- EXPORT-COMPACT --><div style="display:flex; justify-content:space-between; align-items:center;"><div style="font-size: 11px; font-weight: bold; color: #22c55e;">Export Sales</div><button class="modal-btn" style="min-height:28px; width:auto; padding:4px 12px; font-size:11px; margin:0;" onclick="exportSalesRange()">Download CSV</button></div>
+      <div style="display:flex; gap:6px;"><div style="flex:1;"><label style="font-size: 9px; color: #94a3b8;">From (optional):</label>
+      <input type="date" id="exportFrom" class="custom-input" style="min-height:32px; height:32px; font-size:12px; padding:2px 6px; margin-top:2px;">
+      </div><div style="flex:1;"><label style="font-size: 9px; color: #94a3b8;">To (optional):</label>
+      <input type="date" id="exportTo" class="custom-input" style="min-height:32px; height:32px; font-size:12px; padding:2px 6px; margin-top:2px;">
+      </div></div></div>
+      <button class="modal-btn" style="background: #334155; color: #fff; margin-top: 4px; min-height:36px; padding:6px;" onclick="closeSalesHistoryModal()">Close</button>
+    </div>
+  </div>
+
+  <!-- UTANG LIST MODAL -->
+  <div class="modal-overlay" id="utangModal">
+    <div class="modal-content" style="width: 380px;">
+      <div class="receipt-header">Utang List</div>
+      <div style="background: #0f172a; border: 1px solid #334155; padding: 8px; border-radius: 6px; margin-top: 4px;">
+        <div style="font-size: 9px; color: #94a3b8;">Total owed to you</div>
+        <div style="font-size: 14px; font-weight: 800; color: #f59e0b;" id="utangTotal">₱0.00</div>
+      </div>
+      <div style="max-height: 200px; overflow-y: auto; margin-top: 6px;">
+        <table class="manager-table">
+          <thead><tr><th>Customer</th><th>Date/Time</th><th>Balance</th><th></th></tr></thead>
+          <tbody id="utangListBody"></tbody>
+        </table>
+      </div>
+      <div id="utangPayBox" style="display: none; margin-top: 6px;">
+        <div style="font-size: 10px; color: #38bdf8; font-weight: bold;" id="utangPayLabel"></div>
+        <select id="utangPayMethod" class="custom-input" style="margin-bottom: 4px;"><option value="Cash">Cash</option><option value="E-Wallet">E-Wallet</option></select>
+        <input type="number" id="utangPayAmount" class="custom-input" placeholder="Amount received (₱)">
+        <button class="modal-btn" style="background: #22c55e; color: #0f172a; margin-top: 4px;" onclick="confirmUtangPay()">Confirm Payment</button>
+      </div>
+      <button class="modal-btn" style="background: #334155; color: #fff; margin-top: 6px;" onclick="closeUtangModal()">Close</button>
+    </div>
+  </div>
+
+  <!-- STOCK VIEW MODAL (read-only) -->
+  <div class="modal-overlay" id="stockViewModal">
+    <div class="modal-content" style="width: 380px;">
+      <div class="receipt-header">Stock View</div>
+      <input type="text" id="stockSearch" placeholder="Search item..." oninput="stockViewPage=1; renderStockView()" style="width:100%; margin-top:6px; padding:8px; box-sizing:border-box; border-radius:6px; border:1px solid #334155; background:#0f172a; color:#fff;">
+      <div id="stockCatBtns" style="display:flex; flex-wrap:wrap; gap:4px; margin-top:6px;"></div>
+      <table class="manager-table" style="margin-top:6px;">
+        <thead><tr><th>Name</th><th>Stock</th></tr></thead>
+        <tbody id="stockViewBody"></tbody>
+      </table>
+      <div id="stockPager" style="display:flex; justify-content:center; flex-wrap:wrap; gap:4px; margin-top:6px;"></div>
+      <button class="modal-btn" style="background: #334155; color: #fff; margin-top: 6px;" onclick="closeStockViewModal()">Close</button>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="custHistModal">
+    <div class="modal-content" style="width: 380px;">
+      <div class="receipt-header">Customer History</div>
+      <div style="background: #0f172a; border: 1px solid #334155; padding: 8px; border-radius: 6px; margin-top: 4px;">
+        <div style="font-size: 12px; font-weight: bold; color: #38bdf8;" id="custHistName"></div>
+        <div style="font-size: 9px; color: #94a3b8; margin-top: 4px;">Total Spent</div>
+        <div style="font-size: 14px; font-weight: 800; color: #22c55e;" id="custHistTotal">₱0.00</div>
+      </div>
+      <div style="max-height: 260px; overflow-y: auto; margin-top: 6px;">
+        <table class="manager-table">
+          <thead><tr><th>Date</th><th>Items</th><th>Total</th></tr></thead>
+          <tbody id="custHistBody"></tbody>
+        </table>
+      </div>
+      <button class="modal-btn" style="background: #334155; color: #fff; margin-top: 6px;" onclick="closeCustHistory()">Close</button>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="expModal">
+    <div class="modal-content" style="width: 380px;">
+      <div class="receipt-header">Expenses</div>
+      <input type="number" id="expAmount" class="custom-input" placeholder="Amount (&#8369;)" style="margin-top:6px;">
+      <input type="text" id="expReason" class="custom-input" placeholder="Reason (e.g. Kuryente, Pamalit stock)">
+      <select id="expSource" class="custom-input"><option value="Cash">Cash (drawer)</option><option value="E-Wallet">E-Wallet</option></select>
+      <button class="modal-btn" style="background:#22c55e; color:#0f172a; margin-top:4px;" onclick="saveExpense()">Save Expense</button>
+      <button class="modal-btn" style="background: #334155; color: #fff; margin-top: 6px;" onclick="closeExpenses()">Close</button>
+    </div>
+  </div>
+
+  <!-- ITEM & CATEGORY MANAGER MODAL -->
+  <div class="modal-overlay" id="itemManagerModal">
+    <div class="modal-content" style="width: 380px;">
+      <div class="receipt-header">Items & Inventory Management</div>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+        <span style="font-size: 10px; color: #94a3b8;">Manage menu & stock levels:</span>
+        <div style="display: flex; gap: 4px;">
+          <button class="modal-btn" style="padding: 4px 6px; font-size: 9px; background: #38bdf8; color: #0f172a;" onclick="toggleCategorySection()">📁 Categories</button>
+          <button class="modal-btn" style="padding: 4px 6px; font-size: 9px;" onclick="openAddProductForm()">+ Add Item</button>
+        </div>
+      </div>
+
+      <!-- CATEGORY MANAGER SECTION -->
+      <div id="categoryManagerContainer" style="display: none; background: #0f172a; border: 1px solid #334155; padding: 8px; border-radius: 6px; margin-top: 6px;">
+        <div style="font-size: 10px; font-weight: bold; color: #38bdf8; margin-bottom: 4px;">Manage Categories</div>
+        <div style="display: flex; gap: 4px; margin-bottom: 6px;">
+          <input type="text" id="newCategoryInput" class="custom-input" placeholder="Category Name (e.g. Hardware)" style="margin-bottom: 0;">
+          </div>
+        <div style="display: flex; gap: 6px; margin-bottom: 6px;">
+          <button class="modal-btn" style="background: #334155; color: #fff; flex: 1;" onclick="toggleCategorySection()">Cancel</button>
+          <button class="modal-btn" style="flex: 1;" onclick="addNewCategory()">Save</button>
+        </div>
+        <div id="categoryListContainer" style="max-height: 100px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px;"></div>
+      </div>
+      
+      <div id="productFormContainer" style="display: none; background: #0f172a; border: 1px solid #334155; padding: 8px; border-radius: 6px; margin-top: 6px;">
+        <div style="font-size: 10px; font-weight: bold; color: #22c55e; margin-bottom: 4px;" id="formTitle">Add New Product</div>
+        <input type="hidden" id="editProductId">
+        <label style="font-size: 9px; color: #94a3b8;">Item Name:</label>
+          <input type="text" id="inputItemName" class="custom-input" placeholder="e.g. Grilled Chicken">
+        <label style="font-size: 9px; color: #94a3b8;">Price (₱):</label>
+        <input type="number" id="inputItemPrice" class="custom-input" placeholder="150">
+        <label style="font-size: 9px; color: #94a3b8;">Stock Quantity:</label>
+        <input type="number" id="inputItemStock" class="custom-input" placeholder="25">
+        <label style="font-size: 9px; color: #94a3b8;">Cost/Puhunan (₱):</label>
+        <input type="number" id="inputItemCost" class="custom-input" placeholder="100">
+        <label style="font-size: 9px; color: #94a3b8;">Category:</label>
+        <select id="inputItemCategory" class="custom-input"></select>
+        <div style="display: flex; gap: 6px; margin-top: 4px;">
+          <button class="modal-btn" style="background: #334155; color: #fff; flex: 1;" onclick="cancelProductForm()">Cancel</button>
+          <button class="modal-btn" style="flex: 1;" onclick="saveProductData()">Save Item</button>
+        </div>
+      </div>
+
+      <div style="max-height: 180px; overflow-y: auto; margin-top: 6px;">
+        <table class="manager-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Cat</th>
+              <th>Price</th>
+              <th>Cost</th>
+              <th>Stock</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="managerTableBody"></tbody>
+        </table>
+      </div>
+
+      <button class="modal-btn" style="background: #334155; color: #fff; margin-top: 6px;" onclick="closeItemManagerModal()">Close Manager</button>
+    </div>
+  </div>
+
+
+  <div class="modal-overlay" id="customModal">
+    <div class="modal-content">
+      <div class="receipt-header">Add Custom Item</div>
+      <input type="text" id="customName" class="custom-input" placeholder="Item Name (e.g. Service Fee)">
+      <div class="numpad-display" id="numpadDisplay">₱0.00</div>
+      <div class="numpad-grid">
+        <button class="numpad-btn" onclick="pressNumpad('1')">1</button>
+        <button class="numpad-btn" onclick="pressNumpad('2')">2</button>
+        <button class="numpad-btn" onclick="pressNumpad('3')">3</button>
+        <button class="numpad-btn" onclick="pressNumpad('4')">4</button>
+        <button class="numpad-btn" onclick="pressNumpad('5')">5</button>
+        <button class="numpad-btn" onclick="pressNumpad('6')">6</button>
+        <button class="numpad-btn" onclick="pressNumpad('7')">7</button>
+        <button class="numpad-btn" onclick="pressNumpad('8')">8</button>
+        <button class="numpad-btn" onclick="pressNumpad('9')">9</button>
+        <button class="numpad-btn action" onclick="clearNumpad()">C</button>
+        <button class="numpad-btn" onclick="pressNumpad('0')">0</button>
+        <button class="numpad-btn action" onclick="backspaceNumpad()">⌫</button>
+      </div>
+      <div style="display: flex; gap: 6px; margin-top: 6px;">
+        <button class="modal-btn" style="background: #334155; color: #fff; flex: 1;" onclick="closeCustomModal()">Cancel</button>
+        <button class="modal-btn" style="flex: 1;" onclick="addCustomItemToCart()">Add to Cart</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="receiptModal">
+    <div class="modal-content" style="background: #ffffff; color: #000000; border-radius: 6px; padding: 16px;">
+      <div class="receipt-header" id="receiptStoreHeader" style="border-bottom: 1px dashed #000; color: #000; font-size: 13px;">Totskie POS System</div>
+      <div style="text-align: center; font-size: 8px; color: #555; margin-bottom: 6px;" id="receiptStoreSub">Palompon, Leyte</div>
+      <div class="receipt-body" id="receiptBody" style="color: #000;"></div>
+      <div style="border-top: 1px dashed #000; margin-top: 6px; padding-top: 4px; display: flex; justify-content: space-between; font-size: 11px; font-weight: bold;">
+        <span>Total Paid:</span>
+        <span id="receiptTotal">₱0.00</span>
+      </div>
+      <div style="font-size: 9px; color: #555; text-align: center; margin-top: 2px;" id="receiptPaymentDetails">Payment: Cash</div>
+      <div class="receipt-barcode" id="receiptBarcode">*9823-4819-2810*</div>
+      <div style="text-align: center; font-size: 8px; color: #555; margin-top: 4px; font-style: italic;" id="receiptFooterMessage">Thank you, come again!</div>
+      <div style="display: flex; gap: 4px; margin-top: 10px;">
+        <button class="modal-btn" style="background: #22c55e; color: #0f172a; flex: 1; font-size: 16px; min-height: 44px;" onclick="closeModal()">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+(function () {
+  var keys = ['totskie_categories','totskie_products','totskie_sales','totskie_store','totskie_kds','totskie_utang'];
+  try {
+    var x = new XMLHttpRequest(); x.open('GET', '/api/state', false); x.send();
+    if (x.status === 200) {
+      var s = JSON.parse(x.responseText);
+      keys.forEach(function (k) {
+        if ((k === 'totskie_sales' || k === 'totskie_products') && localStorage.getItem('totskie_unsynced_' + k) === '1' && localStorage.getItem(k) !== null) {
+          var u = new XMLHttpRequest(); u.open('POST', '/api/state/' + k, false);
+          u.setRequestHeader('Content-Type', 'application/json');
+          u.send(JSON.stringify({ value: localStorage.getItem(k) }));
+          if (u.status === 200) { localStorage.removeItem('totskie_unsynced_' + k); }
+        }
+        else if (s[k] !== undefined && s[k] !== null) { localStorage.setItem(k, s[k]); }
+        else {
+          var l = localStorage.getItem(k);
+          if (l !== null) {
+            var p = new XMLHttpRequest(); p.open('POST', '/api/state/' + k, false);
+            p.setRequestHeader('Content-Type', 'application/json');
+            p.send(JSON.stringify({ value: l }));
+          }
+        }
+      });
+    }
+  } catch (e) { console.error('State sync failed', e); }
+})();
+</script>
+<script>
+(function () {
+  window.currentRole = null;
+  window.currentUserName = '';
+  function api(method, url, body) {
+    var x = new XMLHttpRequest();
+    try {
+      x.open(method, url, false);
+      if (body) x.setRequestHeader('Content-Type', 'application/json');
+      x.send(body ? JSON.stringify(body) : null);
+    } catch (e) { return { status: 0, data: {} }; }
+    var j = {};
+    try { j = JSON.parse(x.responseText); } catch (e2) {}
+    return { status: x.status, data: j };
+  }
+  function showLogin(setup, offline, signupOpen) {
+    var ov = document.getElementById('loginOverlay');
+    var title = document.getElementById('loginTitle');
+    var dots = document.getElementById('loginDots');
+    var msg = document.getElementById('loginMsg');
+    var pad = document.getElementById('loginPad');
+    ov.style.display = 'flex';
+    var pin = '', first = '', mode = setup ? 'setup1' : 'login';
+    var code = document.createElement('input');
+    code.placeholder = 'Tester code (if you have one)'; code.maxLength = 6;
+    code.value = localStorage.getItem('tcode') || '';
+    code.style.cssText = 'width:80%;max-width:260px;padding:10px;margin:6px auto;font-size:18px;text-align:center;border-radius:8px;border:1px solid #334155;background:#1e293b;color:#f8fafc';
+    code.oninput = function () { code.value = code.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); };
+    title.parentNode.insertBefore(code, title);
+    var rc = document.createElement('input'); rc.placeholder = 'Recovery Code'; rc.maxLength = 9;
+    rc.style.cssText = code.style.cssText + ';display:none';
+    rc.oninput = function () { rc.value = rc.value.toUpperCase().replace(/[^A-Z0-9-]/g, ''); };
+    title.parentNode.insertBefore(rc, title);
+    var fg = document.createElement('button'); fg.type = 'button'; fg.textContent = 'Forgot PIN?';
+    fg.style.cssText = 'margin:6px auto;background:none;border:none;color:#94a3b8;font-size:14px;cursor:pointer;display:none';
+    fg.onclick = function () { pin = ''; first = ''; msg.textContent = ''; mode = (mode === 'login') ? 'rec1' : 'login'; paint(); };
+    pad.parentNode.appendChild(fg);
+    var sw = document.createElement('button');
+    sw.type = 'button';
+    sw.style.cssText = 'margin:10px auto;background:none;border:none;color:#38bdf8;font-size:15px;cursor:pointer;display:' + ((signupOpen && !setup) ? 'block' : 'none');
+    sw.onclick = function () { pin = ''; first = ''; msg.textContent = ''; mode = (mode === 'login') ? 'signup1' : 'login'; paint(); };
+    pad.parentNode.appendChild(sw);
+    function paint() {
+      if (mode === 'rec1' || mode === 'rec2') {
+        title.textContent = mode === 'rec1' ? 'Forgot PIN: enter Tester code and Recovery Code, then type a new PIN (4-6 digits)' : 'Confirm your new PIN';
+        code.style.display = 'block'; rc.style.display = 'block'; sw.style.display = 'none';
+        fg.textContent = 'Back to login'; fg.style.display = 'block';
+        dots.textContent = pin ? '\u25CF'.repeat(pin.length) : '';
+        return;
+      }
+      rc.style.display = 'none'; sw.style.display = (signupOpen && !setup) ? 'block' : 'none';
+      fg.textContent = 'Forgot PIN?'; fg.style.display = (mode === 'login' && !offline && !setup) ? 'block' : 'none';
+      title.textContent = mode === 'login' ? 'Enter PIN' : (mode === 'signup1' ? 'Sign up: choose your admin PIN (4-6 digits)' : (mode === 'signup2' ? 'Confirm your PIN' : (mode === 'setup1' ? 'First setup: choose an admin PIN (4-6 digits)' : 'Confirm your PIN')));
+      code.style.display = (mode === 'login') ? 'block' : 'none';
+      sw.textContent = (mode === 'login') ? 'Sign up (new tester)' : 'Back to login';
+      dots.textContent = pin ? '●'.repeat(pin.length) : '';
+    }
+    function submit() {
+      if (offline) { if (KH.can(pin)) { try{sessionStorage.setItem('kh_off','1')}catch(e){} location.reload(); return; } if (!pin) { location.reload(); return; } msg.textContent = (KH.g('kh_pin') && KH.fresh()) ? 'Wrong PIN.' : 'Kinahanglan mo-online para ma-check ang bayad. Facebook: Totskie Apps'; pin = ''; paint(); return; }
+      if (!/^[0-9]{4,6}$/.test(pin)) { msg.textContent = 'PIN must be 4-6 digits.'; return; }
+      if (mode === 'rec1') {
+        if (code.value.length !== 6) { msg.textContent = 'Enter your Tester code.'; pin = ''; paint(); return; }
+        if (rc.value.replace(/[^A-Z0-9]/g, '').length < 8) { msg.textContent = 'Enter your Recovery Code.'; pin = ''; paint(); return; }
+        first = pin; pin = ''; mode = 'rec2'; paint(); return;
+      }
+      if (mode === 'rec2') {
+        if (pin !== first) { pin = ''; first = ''; mode = 'rec1'; paint(); msg.textContent = 'PINs do not match. Start again.'; return; }
+        var rr = api('POST', '/api/auth/recover', { code: code.value, recovery: rc.value, pin: pin });
+        if (rr.status === 200) { rc.value = ''; pin = ''; first = ''; mode = 'login'; paint(); msg.textContent = 'PIN reset. Log in with your new PIN.'; return; }
+        var em = rr.data.error || 'Reset failed.'; pin = ''; first = ''; mode = 'rec1'; paint(); msg.textContent = em; return;
+      }
+      if (mode === 'signup1') { first = pin; pin = ''; mode = 'signup2'; paint(); return; }
+      if (mode === 'signup2') {
+        if (pin !== first) { msg.textContent = 'PINs do not match. Start again.'; pin = ''; first = ''; mode = 'signup1'; paint(); return; }
+        var sg = api('POST', '/api/auth/signup', { pin: pin });
+        if (sg.status === 200) { localStorage.setItem('tcode', sg.data.code); alert('Your tester code: ' + sg.data.code + '\nWrite it down, you need it to log in.'); location.reload(); return; }
+        msg.textContent = sg.data.error || 'Sign-up failed.'; pin = ''; first = ''; mode = 'signup1'; paint(); return;
+      }
+      if (mode === 'setup1') { first = pin; pin = ''; mode = 'setup2'; paint(); return; }
+      if (mode === 'setup2') {
+        if (pin !== first) { msg.textContent = 'PINs do not match. Start again.'; pin = ''; first = ''; mode = 'setup1'; paint(); return; }
+        var r = api('POST', '/api/auth/setup', { pin: pin });
+        if (r.status === 200) { location.reload(); return; }
+        msg.textContent = r.data.error || 'Setup failed.'; pin = ''; mode = 'setup1'; paint(); return;
+      }
+      var l = api('POST', '/api/auth/login', { pin: pin, code: code.value });
+      if (l.status === 200) { KH.savePin(pin); localStorage.setItem('tcode', code.value); location.reload(); return; }
+      msg.textContent = l.data.error || 'Wrong PIN.'; pin = ''; paint();
+    }
+    function press(k) {
+      msg.textContent = '';
+      if (k === 'del') { pin = pin.slice(0, -1); }
+      else if (k === 'ok') { submit(); return; }
+      else if (pin.length < 6) { pin += k; }
+      paint();
+    }
+    ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'del', '0', 'ok'].forEach(function (k) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = k === 'del' ? '⌫' : (k === 'ok' ? 'OK' : k);
+      b.style.cssText = 'min-height:56px;font-size:22px;font-weight:bold;border-radius:8px;cursor:pointer;border:1px solid #334155;background:' + (k === 'ok' ? '#22c55e;color:#052e16' : '#1e293b;color:#f8fafc');
+      b.onclick = function () { press(k); };
+      pad.appendChild(b);
+    });
+    document.addEventListener('keydown', function (e) {
+      if (ov.style.display !== 'flex' || e.target === code) return;
+      if (e.key.length === 1 && e.key >= '0' && e.key <= '9') press(e.key);
+      else if (e.key === 'Backspace') press('del');
+      else if (e.key === 'Enter') press('ok');
+    });
+    if (offline) msg.textContent = (KH.g('kh_pin') && KH.fresh()) ? 'Offline: enter your PIN.' : 'Kailangan mong mag-online para ma-check ang bayad. Facebook: Totskie Apps';
+    paint();
+  }
+  var res = api('GET', '/api/auth/status'); if (res.status === 0 && KH.fresh() && sessionStorage.getItem('kh_off') === '1') { res = { status: 200, off: true, data: { user: { role: KH.g('kh_role') || 'admin', name: KH.g('kh_name') || '' } } }; }
+  if (res.status === 200 && res.data.user) {
+    window.currentRole = res.data.user.role;
+    window.currentUserName = res.data.user.name; if (!res.off) KH.save(res.data.user.role, res.data.user.name);
+  } else {
+    showLogin(res.status === 200 && res.data.setup_needed, res.status !== 200, res.status === 200 && res.data.signup_open);
+  }
+})();
+</script>
+<script>
+window.kaheraBadge=function(){if(document.getElementById('kBadge'))return;try{fetch('/api/trial-info').then(function(r){return r.json()}).then(function(d){
+if(d.days===null||d.days===undefined)return;
+var b=document.createElement('a');b.href='/pay';b.textContent='Trial: '+d.days+' days left';
+b.style.cssText='position:fixed;bottom:8px;left:8px;z-index:50;background:#0f172a;color:#fbbf24;border:1px solid #334155;padding:6px 10px;border-radius:16px;font-size:12px;text-decoration:none;opacity:.9;display:none';
+b.id='kBadge';document.body.appendChild(b);var si=document.getElementById('subItem');if(si){si.style.display='block';si.textContent='\ud83d\udcb3 Subscription: '+d.days+' days left \u00b7 \u20b150/month or \u20b1500/year \u00b7 Tap to pay';}}).catch(function(){});}catch(e){}};
+kaheraBadge();setInterval(function(){if(!document.getElementById('kBadge'))kaheraBadge();},15000);
+</script>
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+
+<script src="{{ url_for('static', filename='html5-qrcode.min.js') }}" type="text/javascript"></script>
+
+<!-- Camera Scanner Modal -->
+
+    
+  </div>
+</div>
+
+
+<!-- Item Modifiers Modal -->
+<div id="modifierModal" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:9999; justify-content:center; align-items:center;">
+  <div style="background:white; padding:20px; border-radius:12px; max-width:400px; width:90%; text-align:left;">
+    <h3 id="modProductName" style="margin-top:0; text-align:center; color:#1f2937;">Customize Item</h3>
+    <div id="modifierOptionsList" style="max-height: 250px; overflow-y: auto; margin-bottom: 15px; border-top: 1px solid #e5e7eb; border-bottom: 1px solid #e5e7eb; padding: 10px 0;"></div>
+    <div style="display:flex; gap:10px;">
+      <button onclick="confirmModifiers()" style="flex:1; padding:12px; background:#16a34a; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">Confirm & Add</button>
+      <button onclick="closeModifierModal()" style="flex:1; padding:12px; background:#6b7280; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">Cancel</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- Kitchen Order Ticket (KOT) Modal -->
+<div id="kotModal" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:9999; justify-content:center; align-items:center;">
+  <div style="background:white; padding:20px; border-radius:12px; max-width:500px; width:90%; text-align:left; max-height: 80vh; display:flex; flex-direction:column;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid #e5e7eb; padding-bottom:10px;">
+      <h3 style="margin:0; color:#1f2937;">🍳 Active Kitchen Orders (KOT)</h3>
+      <button onclick="closeKotModal()" style="background:none; border:none; font-size:18px; cursor:pointer; font-weight:bold;">✕</button>
+    </div>
+    <div id="kotOrdersList" style="flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:12px;">
+      <!-- Dynamic KOT tickets will appear here -->
+    </div>
+    <div style="margin-top:15px; border-top:1px solid #e5e7eb; padding-top:10px; text-align:right;">
+      <button onclick="closeKotModal()" style="padding:10px 20px; background:#6b7280; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">Close</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- Barcode Scanner Modal -->
+
+    <!-- Camera Viewport -->
+    
+    
+  </div>
+</div>
+
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js')</script>
+<div id="guideBox" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:99999;align-items:center;justify-content:center;padding:12px;"><div style="background:#fff;color:#222;border-radius:12px;padding:14px;width:100%;max-width:420px;max-height:85vh;overflow-y:auto;font-size:13px;line-height:1.45;"><div style="font-size:16px;font-weight:bold;text-align:center;">&#128214; Gabay / Guide</div><div style="display:flex;gap:6px;margin-top:8px;"><button type="button" id="guideTabEn" onclick="guideLang('en')" style="flex:1;padding:10px;border:0;border-radius:8px;background:#1565c0;color:#fff;">English</button><button type="button" id="guideTabTl" onclick="guideLang('tl')" style="flex:1;padding:10px;border:0;border-radius:8px;background:#ddd;color:#222;">Tagalog</button></div><div id="guideEn"><div style="margin-top:10px;"><b>1. Sales Register</b><div>Tap an item to add it to Current Order. Use + / - to change the quantity. Use + Custom Item for things not on the list. Clear Cart removes everything. Tap CHARGE / PAY when ready.</div></div><div style="margin-top:10px;"><b>2. Payment</b><div>- Cash: tap Exact or a bill amount. The change is shown.<br>- E-Wallet: choose GCash, Maya or Bank. Type the Reference No. from the customer's phone.<br>- Utang: the customer name is required.<br>- Name is optional for Cash and E-Wallet.</div></div><div style="margin-top:10px;"><b>3. Items &amp; Inventory</b><div>Add Item, Edit, Restock, Del. Use Categories to add or change groups.</div></div><div style="margin-top:10px;"><b>4. Stock View</b><div>Read-only. Search or pick a category. Use the page numbers. OUT (red) means zero. &#9888;&#65039; means 1 to 5 left.</div></div><div style="margin-top:10px;"><b>5. Utang List</b><div>Tap a name to see the details. Tap Pay, choose Cash or E-Wallet, type the amount, then Confirm Payment.</div></div><div style="margin-top:10px;"><b>6. Receipts &amp; Sales History</b><div>Choose Today, Week or Month. Cash in Drawer, E-Wallet, Utang to Collect and Stock Capital are totals from the start. Stock Capital is your cost x stock now.<br>- Tap Void to cancel a sale (stock is returned).<br>- Tap a customer name to see what they bought and their Total Spent. Sales without a name cannot be tapped.<br>- + Add Expense records money spent. Expenses are subtracted from Cash in Drawer or E-Wallet. Expenses are saved on this phone only.<br>- Download CSV saves your sales.</div></div><div style="margin-top:10px;"><b>7. Store Settings</b><div>Store name, address, contact number, receipt message and QR image. Tap Save Settings.</div></div><div style="margin-top:10px;"><b>8. Staff PINs</b><div>Add staff with a name, role and PIN. Generate a Recovery Code and keep it in a safe place. You need it if you forget your PIN.</div></div><div style="margin-top:10px;"><b>9. Data: Reset</b><div>Deletes all items, categories, sales, Utang, expenses and store settings. Staff PINs and Recovery Code are kept. Export sales first in Receipts &amp; Sales History.</div></div><div style="margin-top:10px;"><b>10. Subscription</b><div>See the days left in the menu. Tap it to pay (&#8369;50/month or &#8369;500/year).</div></div></div><div id="guideTl" style="display:none;"><div style="margin-top:10px;"><b>1. Sales Register</b><div>I-tap ang item para ilagay sa Current Order. Gamitin ang + / - para baguhin ang dami. Gamitin ang + Custom Item para sa item na wala sa listahan. Binubura ng Clear Cart ang lahat. I-tap ang CHARGE / PAY kapag handa na.</div></div><div style="margin-top:10px;"><b>2. Payment</b><div>- Cash: i-tap ang Exact o ang halaga ng pera. Makikita ang sukli.<br>- E-Wallet: piliin ang GCash, Maya o Bank. Ilagay ang Reference No. mula sa phone ng customer.<br>- Utang: kailangan ang pangalan ng customer.<br>- Opsyonal ang pangalan sa Cash at E-Wallet.</div></div><div style="margin-top:10px;"><b>3. Items &amp; Inventory</b><div>Add Item, Edit, Restock, Del. Gamitin ang Categories para magdagdag o magbago ng grupo.</div></div><div style="margin-top:10px;"><b>4. Stock View</b><div>Basahin lang. Maghanap o pumili ng category. Gamitin ang page numbers. Ang OUT (pula) ay wala nang stock. Ang &#9888;&#65039; ay 1 hanggang 5 na lang.</div></div><div style="margin-top:10px;"><b>5. Utang List</b><div>I-tap ang pangalan para makita ang detalye. I-tap ang Pay, piliin ang Cash o E-Wallet, ilagay ang halaga, tapos Confirm Payment.</div></div><div style="margin-top:10px;"><b>6. Receipts &amp; Sales History</b><div>Piliin ang Today, Week o Month. Ang Cash in Drawer, E-Wallet, Utang to Collect at Stock Capital ay kabuuan mula sa simula. Ang Stock Capital ay cost x stock ngayon.<br>- I-tap ang Void para kanselahin ang benta (babalik ang stock).<br>- I-tap ang pangalan ng customer para makita ang binili niya at ang Total Spent. Hindi ma-tap ang benta na walang pangalan.<br>- Ang + Add Expense ay para sa perang nagastos. Ang Expenses ay binabawas sa Cash in Drawer o E-Wallet. Ang Expenses ay naka-save sa phone na ito lang.<br>- Ang Download CSV ay nagse-save ng mga benta.</div></div><div style="margin-top:10px;"><b>7. Store Settings</b><div>Pangalan ng tindahan, address, contact number, mensahe sa resibo at QR image. I-tap ang Save Settings.</div></div><div style="margin-top:10px;"><b>8. Staff PINs</b><div>Magdagdag ng staff gamit ang pangalan, role at PIN. Gumawa ng Recovery Code at itago ito sa ligtas na lugar. Kailangan ito kung makalimutan ang PIN.</div></div><div style="margin-top:10px;"><b>9. Data: Reset</b><div>Binubura ang lahat ng items, categories, sales, Utang, expenses at store settings. Pinapanatili ang Staff PINs at Recovery Code. I-export muna ang sales sa Receipts &amp; Sales History.</div></div><div style="margin-top:10px;"><b>10. Subscription</b><div>Makikita sa menu kung ilang araw ang natitira. I-tap para magbayad (&#8369;50/buwan o &#8369;500/taon).</div></div></div><button type="button" onclick="closeGuide()" style="width:100%;padding:12px;margin-top:12px;border:0;border-radius:8px;background:#ddd;color:#222;">Close</button></div></div><script>function guideLang(l){var e=document.getElementById("guideEn"),t=document.getElementById("guideTl"),be=document.getElementById("guideTabEn"),bt=document.getElementById("guideTabTl");var en=l==="en";e.style.display=en?"block":"none";t.style.display=en?"none":"block";be.style.background=en?"#1565c0":"#ddd";be.style.color=en?"#fff":"#222";bt.style.background=en?"#ddd":"#2e7d32";bt.style.color=en?"#222":"#fff";}</script>
+<script>function openGuide(){document.getElementById("guideBox").style.display="flex";}function closeGuide(){document.getElementById("guideBox").style.display="none";}</script>
+</body>
+
+</html>
